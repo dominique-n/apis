@@ -1,0 +1,6 @@
+(seq "")
+(seq "qb")
+(seq " "
+)
+(seq nil)
+(seq 1)
