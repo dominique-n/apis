@@ -10,9 +10,17 @@
 (let [path "dev-resources/google/" 
       *query-params [:key "api-key" :query ["data" "business"] :orderBy "recent" :maxResults 20]
       response (json/parse-string (slurp (str path "activities_response.json")) true)
+      response-fn (fn [& _] response) 
       items (json/parse-string (slurp (str path "items.json")) true)
       [item0 item1 & _] items]
 
+
+  (facts "About `http-iterate"
+         (let [query-params (assoc (apply hash-map *query-params) :maxResults 10)
+               *http-iterate (http-iterate response-fn 3 query-params)]
+           *http-iterate => #(= (count %) 30)
+           )
+         )
 
   (facts "About 'activities-search"
          ((partial http-get 0) 1) => response
