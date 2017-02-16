@@ -13,12 +13,10 @@
                    :maxResults 20})
 
 (defn http-get [actions query-params]
-  (let [action (clojure.string/join "/" actions)] 
+  (let [action (clojure.string/join "/" (mapv name actions))] 
     (http/get (str "https://www.googleapis.com/plus/v1/" action)
             {:insecure? true
              :query-params (merge *query-params query-params)})))
-
-(def activities-search (partial http-get ["activities"]))
 
 (defn http-iterate [http size query-params]
   (->> [nil  (http query-params)]
