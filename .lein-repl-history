@@ -11,3 +11,4 @@
 (hash-map [:1 1 :2 2])
 (hash-map :1 1 :2 2)
 (apply hash-map [:1 1 :2 2])
+(doc merge)
