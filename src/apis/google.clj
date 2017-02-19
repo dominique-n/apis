@@ -25,8 +25,7 @@
                   (if (= 200 (:status response))
                     (let [body (-> response :body (json/parse-string true))]
                       [(:items body) (http (assoc query-params :pageToken (:nextPageToken body)))])
-                    (do (println (:status response))
-                        (println (-> response :body (json/parse-string true)))))))
+                    (println (json/generate-string response)))))
        next (map first)
        (take-while identity) (take size)
        flatten1L))
