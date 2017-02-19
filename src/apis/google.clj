@@ -17,20 +17,35 @@
   (let [action (clojure.string/join "/" (mapv name actions))] 
     (http/get (str "https://www.googleapis.com/plus/v1/" action)
             {:insecure? true
-             :query-params (merge *query-params query-params {:throw-exceptions false})})))
+             :throw-exceptions false
+             :query-params (merge *query-params query-params)})))
+
+(defn make-body [response] 
+  (-> response :body (json/parse-string true)))
 
 (defn http-iterate [http size query-params]
-  (->> [nil  (http query-params)]
-       (iterate (fn [[_ response]]
-                  (if (= 200 (:status response))
-                    (let [body (-> response :body (json/parse-string true))]
-                      [(:items body) (http (assoc query-params :pageToken (:nextPageToken body)))])
-                    (println (json/generate-string response)))))
-       next (map first)
-       (take-while identity) (take size)
-       flatten1L))
+  (let [response0 (http query-params)]
+    (->> {:status (:status response0) :body (make-body response0)}
+       (iterate (fn [{status :status body :body}]
+                  (if (= 200 status)
+                    (let [*response (http (assoc query-params :pageToken (:nextPageToken body)))]
+                      {:status (:status *response) :body (make-body *response)}))))
+       (take-while identity) (take size))))
 
-(defn activities-search [size & query-params]
-  (let [http (partial http-get ["activities"])
-        *query-params (apply hash-map query-params)]
-    (http-iterate http size *query-params)))
+(defn extract-items [iterator]
+  (flatten1L 
+    (map (fn [{status :status body :body}]
+           (if (= status 200) (:items body)
+             [body]))
+         iterator)))
+
+(defn time-stopper [year-bound items]
+  (let [extract-year #(->> % :published (re-seq #"^\d{4}" ) first Integer.)] 
+    (take-while #(>= (extract-year %) year-bound) 
+              items)))
+
+(defn activities-search 
+  ([size & query-params]
+   (let [http (partial http-get ["activities"])
+         *query-params (apply hash-map query-params)]
+     (extract-items (http-iterate http size *query-params)))))
